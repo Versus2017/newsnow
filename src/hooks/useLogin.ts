@@ -24,24 +24,11 @@ enableLoginAtom.onMount = (set) => {
 }
 
 export function useLogin() {
-  const userInfo = useAtomValue(userAtom)
-  const jwt = useAtomValue(jwtAtom)
-  const enableLogin = useAtomValue(enableLoginAtom)
-
-  const login = useCallback(() => {
-    window.location.href = enableLogin.url || "/api/login"
-  }, [enableLogin])
-
-  const logout = useCallback(() => {
-    window.localStorage.clear()
-    window.location.reload()
-  }, [])
-
   return {
-    loggedIn: !!jwt,
-    userInfo,
-    enableLogin: !!enableLogin.enable,
-    logout,
-    login,
+    loggedIn: false,
+    userInfo: {},
+    enableLogin: false,
+    logout: () => {},
+    login: () => {},
   }
 }
