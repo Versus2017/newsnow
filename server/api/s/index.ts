@@ -1,10 +1,10 @@
 import type { SourceID, SourceResponse } from "@shared/types"
-import { getters } from "#/getters"
-import { getCacheTable } from "#/database/cache"
-import type { CacheInfo } from "#/types"
 import { TTL } from "@shared/consts"
 import { sources } from "@shared/sources"
 import { createError } from "h3"
+import { getters } from "#/getters"
+import { getCacheTable } from "#/database/cache"
+import type { CacheInfo } from "#/types"
 
 export default defineEventHandler(async (event): Promise<SourceResponse> => {
   try {
@@ -40,9 +40,9 @@ export default defineEventHandler(async (event): Promise<SourceResponse> => {
         // 而 TTL 缓存失效时间，在时间范围内，就算内容更新了也要用这个缓存。
         // 复用缓存是不会更新时间的。
         if (now - cache.updated < TTL) {
-          // 移除登录检查，简化逻辑
-          // 如果没有请求最新数据，则使用缓存
-          if (!latest) {
+          // 修改逻辑：如果请求最新数据，且服务器有API访问权限，则不使用缓存
+          // 否则使用缓存数据
+          if (!latest || (latest && !event.context.serverHasApiAccess)) {
             return {
               status: "cache",
               id,
@@ -55,6 +55,9 @@ export default defineEventHandler(async (event): Promise<SourceResponse> => {
     }
 
     try {
+      // 使用服务器用户上下文调用数据获取函数
+      // 将服务器上下文传递给getters
+      event.context.user = event.context.serverUser || null
       const newData = (await getters[id]()).slice(0, 30)
       if (cacheTable && newData.length) {
         if (event.context.waitUntil) event.context.waitUntil(cacheTable.set(id, newData))

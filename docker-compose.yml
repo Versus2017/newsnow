@@ -10,8 +10,12 @@ services:
     ports:
       - '4444:4444'
     environment:
+      # 这些凭证用于服务器验证API请求，但不再用于用户登录
       - G_CLIENT_ID=
       - G_CLIENT_SECRET=
       - JWT_SECRET=
       - INIT_TABLE=true
       - ENABLE_CACHE=true
+      # 代理服务器配置
+      - HTTP_PROXY=http://172.21.0.4:7890
+      - HTTPS_PROXY=http://172.21.0.4:7890
