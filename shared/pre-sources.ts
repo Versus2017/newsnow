@@ -57,6 +57,18 @@ export const originSources = {
     title: "今日最热",
     home: "https://coolapk.com",
   },
+  "mktnews": {
+    name: "MKTNews",
+    column: "finance",
+    home: "https://mktnews.net",
+    color: "indigo",
+    interval: Time.Realtime,
+    sub: {
+      flash: {
+        title: "快讯",
+      },
+    },
+  },
   "wallstreetcn": {
     name: "华尔街见闻",
     color: "blue",
@@ -66,14 +78,14 @@ export const originSources = {
       quick: {
         type: "realtime",
         interval: Time.Fast,
-        title: "实时快讯",
+        title: "快讯",
       },
       news: {
-        title: "最新资讯",
+        title: "最新",
         interval: Time.Common,
       },
       hot: {
-        title: "最热文章",
+        title: "最热",
         type: "hottest",
         interval: Time.Common,
       },
@@ -102,8 +114,11 @@ export const originSources = {
   },
   "hupu": {
     name: "虎扑",
-    disable: true,
     home: "https://hupu.com",
+    column: "china",
+    title: "主干道热帖",
+    type: "hottest",
+    color: "red",
   },
   "tieba": {
     name: "百度贴吧",
@@ -139,8 +154,6 @@ export const originSources = {
   "sputniknewscn": {
     name: "卫星通讯社",
     color: "orange",
-    // cloudflare pages cannot access
-    disable: "cf",
     column: "world",
     home: "https://sputniknews.cn",
   },
@@ -150,6 +163,25 @@ export const originSources = {
     column: "world",
     interval: Time.Common,
     home: "https://china.cankaoxiaoxi.com",
+  },
+  "pcbeta": {
+    name: "远景论坛",
+    color: "blue",
+    column: "tech",
+    home: "https://bbs.pcbeta.com",
+    sub: {
+      windows11: {
+        title: "Win11",
+        type: "realtime",
+        interval: Time.Fast,
+      },
+      windows: {
+        title: "Windows 资源",
+        type: "realtime",
+        interval: Time.Fast,
+        disable: true,
+      },
+    },
   },
   "cls": {
     name: "财联社",
@@ -253,6 +285,19 @@ export const originSources = {
         column: "china",
         type: "hottest",
       },
+      "hot-video": {
+        title: "热门视频",
+        disable: "cf",
+        column: "china",
+        type: "hottest",
+      },
+      "ranking": {
+        title: "排行榜",
+        column: "china",
+        disable: "cf",
+        type: "hottest",
+        interval: Time.Common,
+      },
     },
   },
   "kuaishou": {
@@ -291,7 +336,7 @@ export const originSources = {
     column: "tech",
     color: "slate",
     home: "https://linux.do/",
-    disable: "cf",
+    disable: true,
     sub: {
       latest: {
         title: "最新",
@@ -304,6 +349,85 @@ export const originSources = {
         home: "https://linux.do/hot",
       },
     },
+  },
+  "ghxi": {
+    name: "果核剥壳",
+    column: "china",
+    color: "yellow",
+    home: "https://www.ghxi.com/",
+    disable: true,
+  },
+  "smzdm": {
+    name: "什么值得买",
+    column: "china",
+    color: "red",
+    type: "hottest",
+    home: "https://www.smzdm.com",
+    disable: true,
+  },
+  "nowcoder": {
+    name: "牛客",
+    column: "china",
+    color: "blue",
+    type: "hottest",
+    home: "https://www.nowcoder.com",
+  },
+  "sspai": {
+    name: "少数派",
+    column: "tech",
+    color: "red",
+    type: "hottest",
+    home: "https://sspai.com",
+  },
+  "juejin": {
+    name: "稀土掘金",
+    column: "tech",
+    color: "blue",
+    type: "hottest",
+    home: "https://juejin.cn",
+  },
+  "ifeng": {
+    name: "凤凰网",
+    column: "china",
+    color: "red",
+    type: "hottest",
+    title: "热点资讯",
+    home: "https://www.ifeng.com",
+  },
+  "chongbuluo": {
+    name: "虫部落",
+    column: "china",
+    color: "green",
+    home: "https://www.chongbuluo.com",
+    sub: {
+      latest: {
+        title: "最新",
+        interval: Time.Common,
+        home: "https://www.chongbuluo.com/forum.php?mod=guide&view=newthread",
+      },
+      hot: {
+        title: "最热",
+        type: "hottest",
+        interval: Time.Common,
+        home: "https://www.chongbuluo.com/forum.php?mod=guide&view=hot",
+      },
+    },
+  },
+  "douban": {
+    name: "豆瓣",
+    column: "china",
+    title: "热门电影",
+    color: "green",
+    type: "hottest",
+    home: "https://www.douban.com",
+  },
+  "steam": {
+    name: "Steam",
+    column: "world",
+    title: "在线人数",
+    color: "blue",
+    type: "hottest",
+    home: "https://store.steampowered.com",
   },
 } as const satisfies Record<string, OriginSource>
 
@@ -324,29 +448,38 @@ export function genSources() {
     if (source.sub && Object.keys(source.sub).length) {
       Object.entries(source.sub).forEach(([subId, subSource], i) => {
         if (i === 0) {
-          _.push([id, {
-            redirect: `${id}-${subId}`,
-            ...parent,
-            ...subSource,
-          }] as [any, Source])
+          _.push([
+            id,
+            {
+              redirect: `${id}-${subId}`,
+              ...parent,
+              ...subSource,
+            },
+          ] as [any, Source])
         }
-        _.push([`${id}-${subId}`, { ...parent, ...subSource }] as [any, Source])
+        _.push([`${id}-${subId}`, { ...parent, ...subSource }] as [
+          any,
+          Source,
+        ])
       })
     } else {
-      _.push([id, {
-        title: source.title,
-        ...parent,
-      }])
+      _.push([
+        id,
+        {
+          title: source.title,
+          ...parent,
+        },
+      ])
     }
   })
 
-  return typeSafeObjectFromEntries(_.filter(([_, v]) => {
-    if (v.disable === "cf" && process.env.CF_PAGES) {
-      return false
-    } else if (v.disable === true) {
-      return false
-    } else {
-      return true
-    }
-  }))
+  return typeSafeObjectFromEntries(
+    _.filter(([_, v]) => {
+      if (v.disable === "cf" && process.env.CF_PAGES) {
+        return false
+      } else {
+        return v.disable !== true
+      }
+    }),
+  )
 }

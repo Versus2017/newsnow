@@ -1,92 +1,56 @@
-import * as cheerio from "cheerio"
+import process from "node:process"
 import type { NewsItem } from "@shared/types"
-import { proxyConfig } from "../utils/proxy"
 
 export default defineSource(async () => {
-  const baseURL = "https://www.producthunt.com/"
-
-  try {
-    // 使用代理配置获取数据
-    const response = await proxyConfig.fetch(baseURL, {
-      headers: {
-        "Referer": "https://www.google.com/",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    })
-
-    if (!response.ok) {
-      console.error("ProductHunt访问失败:", response.status, response.statusText)
-      return getBackupData()
-    }
-
-    const html = await response.text()
-    const $ = cheerio.load(html)
-    const $main = $("[data-test=homepage-section-0] [data-test^=post-item]")
-    const news: NewsItem[] = []
-
-    $main.each((_, el) => {
-      const a = $(el).find("a").first()
-      const url = a.attr("href")
-      const title = $(el).find("a[data-test^=post-name]").text()
-      const id = $(el).attr("data-test")?.replace("post-item-", "")
-      const vote = $(el).find("[data-test=vote-button]").text()
-      if (url && id && title) {
-        news.push({
-          url: `${baseURL}${url}`,
-          title,
-          id,
-          extra: {
-            info: `△︎ ${vote}`,
-          },
-        })
-      }
-    })
-
-    // 如果没有解析到数据，则返回模拟数据
-    if (news.length === 0) {
-      return getBackupData()
-    }
-
-    return news
-  } catch (error) {
-    console.error("获取ProductHunt数据失败:", error)
-    // 发生错误时返回备用数据
-    return getBackupData()
+  const apiToken = process.env.PRODUCTHUNT_API_TOKEN
+  const token = `Bearer ${apiToken}`
+  if (!apiToken) {
+    throw new Error("PRODUCTHUNT_API_TOKEN is not set")
   }
-})
+  const query = `
+    query {
+      posts(first: 30, order: VOTES) {
+        edges {
+          node {
+            id
+            name
+            tagline
+            votesCount
+            url
+            slug
+          }
+        }
+      }
+    }
+  `
 
-// 备用数据，当API请求失败时使用
-function getBackupData(): NewsItem[] {
-  return [
-    {
-      id: "product-1",
-      title: "Rewind AI",
-      url: "https://www.producthunt.com/posts/rewind-ai",
-      extra: { info: "△︎ 2.5K" },
+  const response: any = await myFetch("https://api.producthunt.com/v2/api/graphql", {
+    method: "POST",
+    headers: {
+      "Authorization": token,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
     },
-    {
-      id: "product-2",
-      title: "Opus",
-      url: "https://www.producthunt.com/posts/opus-8",
-      extra: { info: "△︎ 1.8K" },
-    },
-    {
-      id: "product-3",
-      title: "Scale Forge",
-      url: "https://www.producthunt.com/posts/scale-forge",
-      extra: { info: "△︎ 1.5K" },
-    },
-    {
-      id: "product-4",
-      title: "Loom AI Transcripts",
-      url: "https://www.producthunt.com/posts/loom-ai-transcripts",
-      extra: { info: "△︎ 1.3K" },
-    },
-    {
-      id: "product-5",
-      title: "Playbook 2.0",
-      url: "https://www.producthunt.com/posts/playbook-2-0",
-      extra: { info: "△︎ 1.2K" },
-    },
-  ]
-}
+    body: JSON.stringify({ query }),
+  })
+
+  const news: NewsItem[] = []
+  const posts = response?.data?.posts?.edges || []
+
+  for (const edge of posts) {
+    const post = edge.node
+    if (post.id && post.name) {
+      news.push({
+        id: post.id,
+        title: post.name,
+        url: post.url || `https://www.producthunt.com/posts/${post.slug}`,
+        extra: {
+          info: ` △︎ ${post.votesCount || 0}`,
+          hover: post.tagline,
+        },
+      })
+    }
+  }
+
+  return news
+})

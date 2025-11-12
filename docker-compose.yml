@@ -1,21 +1,27 @@
-version: '3'
-
 services:
   newsnow:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: newsnow
-    restart: always
     ports:
       - '4444:4444'
+    volumes:
+      - newsnow_data:/usr/app/.data
     environment:
-      # 这些凭证用于服务器验证API请求，但不再用于用户登录
+      - HOST=0.0.0.0
+      - PORT=4444
+      - NODE_ENV=production
       - G_CLIENT_ID=
       - G_CLIENT_SECRET=
       - JWT_SECRET=
       - INIT_TABLE=true
       - ENABLE_CACHE=true
-      # 代理服务器配置
+      - PRODUCTHUNT_API_TOKEN=
+      # 代理服务器配置（可选）
       - HTTP_PROXY=http://172.21.0.4:7890
       - HTTPS_PROXY=http://172.21.0.4:7890
+
+volumes:
+  newsnow_data:
+    name: newsnow_data
